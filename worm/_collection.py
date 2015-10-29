@@ -282,7 +282,7 @@ class Collection(CollectionObject, SparkAPI):
         self._funcs.append(execute)
         return self
         
-    def collect(self):
+    def collect(self, fixed_cpu_count=None):
         """
         Triggers distribution and collection of all transformations 
         pushed onto the Collection
@@ -293,7 +293,7 @@ class Collection(CollectionObject, SparkAPI):
         >>> c = c.map(function)
         >>> c.collect()
         """
-        cpu_count = min(mp.cpu_count(), 20)
+        cpu_count = min(mp.cpu_count(), 20) if fixed_cpu_count==None else fixed_cpu_count
         pool = mp.Pool(cpu_count)
         sys.stdout.write('Initializing on {} cores...'.format(cpu_count))
         sys.stdout.flush()
