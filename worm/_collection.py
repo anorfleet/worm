@@ -264,7 +264,7 @@ class Collection(CollectionObject, SparkAPI):
         execute = ExecutorFilter(func)
         self._funcs.append(execute)
         return self
-        
+
     def reduce(self, func):
         """Tranformation to push a reduce function onto a Collection
 
@@ -281,7 +281,39 @@ class Collection(CollectionObject, SparkAPI):
         execute = ExecutorReduce(func)
         self._funcs.append(execute)
         return self
-        
+
+    def collect_win(self):
+        """
+        Removes use of paralell methods for windows based testing.
+
+        Example
+        --------
+        >>> c = worm.Collection(df)
+        >>> c = c.map(function)
+        >>> c.collect()
+        """
+
+        cpu_count = 1
+        sys.stdout.write('Initializing on to be windows friendly')
+        sys.stdout.flush()
+        chunksize = ((self._count - 1) + cpu_count) / cpu_count
+        status = Status(chunksize, cpu_count)
+        try:
+            result = []
+            rh = RecordHandler(self._funcs)
+            for rec in self.data:
+                name = 'Running'
+                data = rh(rec)['data']
+                status.write(name)
+                if self._relay(data):
+                    data = self._orm(data)
+                    result.extend(data)
+            self._clear_funcs()
+            self.data = result
+
+        except Exception as e:
+            self._print_error(e)
+
     def collect(self, fixed_cpu_count=None):
         """
         Triggers distribution and collection of all transformations 
